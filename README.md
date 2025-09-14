@@ -7,6 +7,8 @@
 
 Kompletní systém pro správu studentů s databází SQLite, generování testovacích dat a automatickou správu Linux systémových účtů.
 
+> **Poznámka:** Tento projekt je primárně určen pro linuxovou distribuci **Ubuntu** běžící v **Docker kontejneru** a slouží k automatizovanému vytváření workspace prostředí pro žáky.
+
 ---
 
 ## 🚀 Rychlý Start

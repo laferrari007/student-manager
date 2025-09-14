@@ -1,45 +1,43 @@
 #!/bin/bash
+# Smaže databázi studenti.db a všechny systémové uživatele vytvořené z této databáze
+# Spouštějte jako root!
 
-INPUT_FILE="../data/students.txt"
 DB_FILE="../data/studenti.db"
 
-echo "Mazání uživatelů podle $INPUT_FILE a databáze $DB_FILE..."
+echo "Mazání uživatelů z databáze a samotné databáze..."
 
-# Funkce pro odstranění diakritiky (stejná jako v create_students.sh)
+# Funkce pro odstranění diakritiky (stejná jako v create_users_from_db.sh)
 remove_diacritics() {
   echo "$1" | iconv -f utf8 -t ascii//TRANSLIT | tr -cd '[:alnum:]'
 }
 
-if [ ! -f "$INPUT_FILE" ]; then
-  echo "Soubor $INPUT_FILE neexistuje!"
-else
-  while read -r line; do
-    [ -z "$line" ] && continue
-    first=$(echo "$line" | awk '{print $1}')
-    last=$(echo "$line" | cut -d' ' -f2-)
-    username="$(echo "${first:0:1}$last" | tr '[:upper:]' '[:lower:]')"
-    username=$(remove_diacritics "$username")
-    if [ -z "$username" ]; then
-      echo "Přeskakuji prázdný login pro řádek: $line"
-      continue
-    fi
-    if id "$username" &>/dev/null; then
-      homedir=$(getent passwd "$username" | cut -d: -f6)
-      shell=$(getent passwd "$username" | cut -d: -f7)
-      echo "Uživatel $username existuje. Domovský adresář: $homedir, shell: $shell"
-      userdel -r "$username"
-      if id "$username" &>/dev/null; then
-        echo "Chyba: účet $username nebyl smazán!"
-      else
-        echo "Smazán účet: $username"
-      fi
-    else
-      echo "Uživatel $username neexistuje."
-    fi
-  done < "$INPUT_FILE"
-fi
-
+# Nejprve smazat uživatele, pokud databáze existuje
 if [ -f "$DB_FILE" ]; then
+  if ! command -v sqlite3 &>/dev/null; then
+    echo "Chybí sqlite3! Nelze načíst uživatele z databáze."
+  else
+    echo "Mazání systémových uživatelů podle databáze..."
+    sqlite3 -csv "$DB_FILE" "SELECT jmeno, prijmeni FROM students;" | while IFS="," read -r jmeno prijmeni; do
+      [ -z "$jmeno" ] && continue
+      [ -z "$prijmeni" ] && continue
+      login="$(echo "${jmeno:0:1}$prijmeni" | tr '[:upper:]' '[:lower:]')"
+      login=$(remove_diacritics "$login")
+      if id "$login" &>/dev/null; then
+        homedir=$(getent passwd "$login" | cut -d: -f6)
+        shell=$(getent passwd "$login" | cut -d: -f7)
+        echo "Uživatel $login existuje. Domovský adresář: $homedir, shell: $shell"
+        userdel -r "$login"
+        if id "$login" &>/dev/null; then
+          echo "Chyba: účet $login nebyl smazán!"
+        else
+          echo "Smazán účet: $login"
+        fi
+      else
+        echo "Uživatel $login neexistuje."
+      fi
+    done
+  fi
+  echo "Mazání databáze $DB_FILE..."
   rm "$DB_FILE"
   echo "Databáze $DB_FILE byla smazána."
 else

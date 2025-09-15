@@ -28,9 +28,9 @@ sqlite3 -csv "$DB_FILE" "SELECT jmeno, prijmeni FROM students;" | while IFS="," 
   if id "$login" &>/dev/null; then
     echo "Uživatel $login již existuje."
   else
-    useradd -m -s /usr/sbin/nologin "$login"
-    chmod 700 "/home/$login"
+    useradd -m -s /bin/bash "$login"
+    chmod 755 "/home/$login"
     echo "$login:$login" | chpasswd
-    echo "Vytvořen omezený účet: $login (heslo: $login, shell: /usr/sbin/nologin)"
+    echo "Vytvořen účet: $login (heslo: $login, shell: /bin/bash)"
   fi
 done
